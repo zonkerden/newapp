@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
 import { loadJSON, saveJSON, todayKey } from '../lib/storage';
+import { useAuth } from '../lib/auth';
+import {
+  fetchMedsItems,
+  addMedsItem,
+  removeMedsItem,
+  fetchMedsTaken,
+  setMedsTaken,
+} from '../lib/sync';
 
 interface MedItem {
   id: string;
@@ -10,7 +18,10 @@ interface MedItem {
 
 export default function MedsReminder() {
   const key = 'vessel:meds:list';
-  const dayKey = `vessel:meds:taken:${todayKey()}`;
+  const day = todayKey();
+  const dayKey = `vessel:meds:taken:${day}`;
+  const { session } = useAuth();
+  const userId = session?.user.id;
   const [items, setItems] = useState<MedItem[]>(() => loadJSON(key, []));
   const [takenIds, setTakenIds] = useState<string[]>(() => loadJSON(dayKey, []));
   const [name, setName] = useState('');
@@ -20,20 +31,39 @@ export default function MedsReminder() {
   useEffect(() => saveJSON(key, items), [items]);
   useEffect(() => saveJSON(dayKey, takenIds), [dayKey, takenIds]);
 
+  // Pull the item list and today's taken state once, right after sign-in
+  useEffect(() => {
+    if (!userId) return;
+    fetchMedsItems(userId).then((remote) => {
+      if (remote) setItems(remote.map((r) => ({ ...r, takenToday: false })));
+    });
+    fetchMedsTaken(userId, day).then((remote) => {
+      if (remote) setTakenIds(remote);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
   const addItem = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    setItems((list) => [...list, { id: crypto.randomUUID(), name: trimmed, time, takenToday: false }]);
+    const item = { id: crypto.randomUUID(), name: trimmed, time, takenToday: false };
+    setItems((list) => [...list, item]);
+    addMedsItem(userId, { id: item.id, name: item.name, time: item.time });
     setName('');
   };
 
   const removeItem = (id: string) => {
     setItems((list) => list.filter((i) => i.id !== id));
     setTakenIds((ids) => ids.filter((i) => i !== id));
+    removeMedsItem(userId, id);
   };
 
   const toggleTaken = (id: string) => {
-    setTakenIds((ids) => (ids.includes(id) ? ids.filter((i) => i !== id) : [...ids, id]));
+    setTakenIds((ids) => {
+      const nowTaken = !ids.includes(id);
+      setMedsTaken(userId, id, day, nowTaken);
+      return nowTaken ? [...ids, id] : ids.filter((i) => i !== id);
+    });
   };
 
   const requestNotifications = async () => {

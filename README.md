@@ -9,7 +9,16 @@ A daily wellness tracker built around one idea: your body is a vessel you fill i
 
 ## Stack
 
-React + Vite + TypeScript, wrapped for Android with Capacitor. Data is stored locally on-device (`localStorage`) — there's no backend in this MVP.
+React + Vite + TypeScript, wrapped for Android with Capacitor. Data is stored locally on-device (`localStorage`) as the source of truth, with optional Supabase sync layered on top for cross-device access — the app works fully offline if you skip sign-in.
+
+## Supabase setup (optional — for cross-device sync)
+
+1. In your Supabase project's SQL editor, run `supabase/schema.sql` once. It's namespaced (`vessel_*` tables) so it's safe to run in a project shared with other apps.
+2. Copy `.env.example` to `.env.local` and fill in your project's URL and anon key (Project Settings → API).
+3. For the deployed build, add the same two values as **repo secrets**: Settings → Secrets and variables → Actions → `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+4. In the app, tap **Sign in** in the header and enter an email — it sends a magic link, no password.
+
+Without these three steps the app just runs on localStorage alone; nothing breaks.
 
 ## Development
 

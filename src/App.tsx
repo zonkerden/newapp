@@ -3,6 +3,7 @@ import WaterTracker from './components/WaterTracker';
 import SleepCoach from './components/SleepCoach';
 import BreathTimer from './components/BreathTimer';
 import MedsReminder from './components/MedsReminder';
+import AuthBar from './components/AuthBar';
 
 type Tab = 'water' | 'sleep' | 'breath' | 'meds';
 
@@ -22,6 +23,7 @@ function App() {
         <span className="wordmark">Vessel</span>
         <span className="tagline">Fill it in, one day at a time</span>
       </header>
+      <AuthBar />
 
       <main className="app-main">
         {tab === 'water' && <WaterTracker />}

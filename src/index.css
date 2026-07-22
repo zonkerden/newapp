@@ -106,6 +106,48 @@ button {
   color: var(--c-text);
 }
 
+.auth-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 20px 4px;
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+
+.auth-bar-open {
+  gap: 8px;
+}
+
+.auth-status {
+  flex: 1;
+}
+
+.auth-link {
+  background: none;
+  border: none;
+  color: var(--c-water);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-input {
+  flex: 1;
+  background: var(--c-surface-raised);
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.auth-error {
+  color: #e08a8a;
+  font-size: 11px;
+}
+
 .module {
   display: flex;
   flex-direction: column;

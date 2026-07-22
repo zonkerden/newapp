@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { loadJSON, saveJSON, todayKey } from '../lib/storage';
+import { useAuth } from '../lib/auth';
+import { syncBreathDay, fetchBreathDay } from '../lib/sync';
 
 type Phase = 'inhale' | 'hold' | 'exhale' | 'rest';
 
@@ -37,6 +39,9 @@ const PHASE_LABEL: Record<Phase, string> = {
 
 export default function BreathTimer() {
   const key = `vessel:breath:${todayKey()}`;
+  const day = todayKey();
+  const { session } = useAuth();
+  const userId = session?.user.id;
   const [sessionsToday, setSessionsToday] = useState<number>(() => loadJSON(key, 0));
   const [patternIdx, setPatternIdx] = useState(0);
   const [active, setActive] = useState(false);
@@ -46,6 +51,19 @@ export default function BreathTimer() {
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => saveJSON(key, sessionsToday), [key, sessionsToday]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchBreathDay(userId, day).then((remote) => {
+      if (remote) setSessionsToday(remote.sessions_count);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  useEffect(() => {
+    syncBreathDay(userId, day, sessionsToday);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, sessionsToday]);
 
   const pattern = PATTERNS[patternIdx];
 

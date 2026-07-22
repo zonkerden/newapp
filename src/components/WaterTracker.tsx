@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { loadJSON, saveJSON, todayKey } from '../lib/storage';
+import { useAuth } from '../lib/auth';
+import { syncWaterDay, fetchWaterDay } from '../lib/sync';
 import Vessel from './Vessel';
 
 const GOAL_ML = 2000;
@@ -12,10 +14,28 @@ interface DayLog {
 
 export default function WaterTracker() {
   const key = `vessel:water:${todayKey()}`;
+  const day = todayKey();
+  const { session } = useAuth();
+  const userId = session?.user.id;
   const [log, setLog] = useState<DayLog>(() => loadJSON(key, { ml: 0, meals: [] }));
   const [mealInput, setMealInput] = useState('');
 
   useEffect(() => saveJSON(key, log), [key, log]);
+
+  // Pull today's remote copy once, right after sign-in
+  useEffect(() => {
+    if (!userId) return;
+    fetchWaterDay(userId, day).then((remote) => {
+      if (remote) setLog(remote);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  // Push changes in the background; harmless no-op when signed out
+  useEffect(() => {
+    syncWaterDay(userId, day, log.ml, log.meals);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, log]);
 
   const addCup = () => setLog((l) => ({ ...l, ml: l.ml + CUP_ML }));
   const removeCup = () => setLog((l) => ({ ...l, ml: Math.max(0, l.ml - CUP_ML) }));

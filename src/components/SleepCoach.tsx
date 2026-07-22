@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { loadJSON, saveJSON, todayKey } from '../lib/storage';
+import { useAuth } from '../lib/auth';
+import { syncSleepDay, fetchSleepDay } from '../lib/sync';
 import Vessel from './Vessel';
 
 const GOAL_HOURS = 8;
@@ -17,11 +19,27 @@ interface SleepLog {
 
 export default function SleepCoach() {
   const key = `vessel:sleep:${todayKey()}`;
+  const day = todayKey();
+  const { session } = useAuth();
+  const userId = session?.user.id;
   const [log, setLog] = useState<SleepLog>(() => loadJSON(key, { bedtime: '', waketime: '' }));
   const [step, setStep] = useState(0);
   const [running, setRunning] = useState(false);
 
   useEffect(() => saveJSON(key, log), [key, log]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchSleepDay(userId, day).then((remote) => {
+      if (remote) setLog(remote);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  useEffect(() => {
+    syncSleepDay(userId, day, log.bedtime, log.waketime);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, log]);
 
   const hours = (() => {
     if (!log.bedtime || !log.waketime) return 0;
